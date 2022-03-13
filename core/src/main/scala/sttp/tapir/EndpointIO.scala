@@ -84,6 +84,7 @@ object EndpointTransput {
     def example(example: Example[T]): ThisType[T] = copyWith(codec, info.example(example))
     def examples(examples: List[Example[T]]): ThisType[T] = copyWith(codec, info.examples(examples))
     def deprecated(): ThisType[T] = copyWith(codec, info.deprecated(true))
+    def hideInDocs(): ThisType[T] = copyWith(codec, info.hideInDocs(true))
     def attribute[A](k: AttributeKey[A]): Option[A] = info.attribute(k)
     def attribute[A](k: AttributeKey[A], v: A): ThisType[T] = copyWith(codec, info.attribute(k, v))
   }
@@ -152,7 +153,7 @@ object EndpointInput extends EndpointInputMacros {
     override private[tapir] type L = List[String]
     override private[tapir] type CF = TextPlain
     override private[tapir] def copyWith[U](c: Codec[List[String], U, TextPlain], i: Info[U]): PathsCapture[U] = copy(codec = c, info = i)
-    override def show = s"/..."
+    override def show = s"/*"
   }
 
   case class Query[T](name: String, codec: Codec[List[String], T, TextPlain], info: Info[T]) extends Atom[T] {
@@ -169,7 +170,7 @@ object EndpointInput extends EndpointInputMacros {
     override private[tapir] type CF = TextPlain
     override private[tapir] def copyWith[U](c: Codec[sttp.model.QueryParams, U, TextPlain], i: Info[U]): QueryParams[U] =
       copy(codec = c, info = i)
-    override def show: String = s"?..."
+    override def show: String = s"?*"
   }
 
   case class Cookie[T](name: String, codec: Codec[Option[String], T, TextPlain], info: Info[T]) extends Atom[T] {
@@ -489,6 +490,7 @@ object EndpointIO {
       description: Option[String],
       examples: List[Example[T]],
       deprecated: Boolean,
+      hideInDocs: Boolean,
       attributes: AttributeMap
   ) {
     def description(d: String): Info[T] = copy(description = Some(d))
@@ -497,6 +499,7 @@ object EndpointIO {
     def example(example: Example[T]): Info[T] = copy(examples = examples :+ example)
     def examples(ts: List[Example[T]]): Info[T] = copy(examples = ts)
     def deprecated(d: Boolean): Info[T] = copy(deprecated = d)
+    def hideInDocs(h: Boolean): Info[T] = copy(hideInDocs = h)
     def attribute[A](k: AttributeKey[A]): Option[A] = attributes.get(k)
     def attribute[A](k: AttributeKey[A], v: A): Info[T] = copy(attributes = attributes.put(k, v))
 
@@ -507,11 +510,12 @@ object EndpointIO {
           Example(ee, name, summary)
         },
         deprecated,
+        hideInDocs,
         attributes
       )
   }
   object Info {
-    def empty[T]: Info[T] = Info[T](None, Nil, deprecated = false, attributes = AttributeMap.Empty)
+    def empty[T]: Info[T] = Info[T](None, Nil, deprecated = false, hideInDocs = false, attributes = AttributeMap.Empty)
   }
 
   /** Annotations which are used by [[EndpointInput.derived]] and [[EndpointOutput.derived]] to specify how a case class maps to an endpoint
